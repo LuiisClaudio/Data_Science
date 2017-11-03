@@ -21,12 +21,12 @@ from sklearn.naive_bayes import GaussianNB
 #Pessoas mais velhas faltam mais?
 #Pessoas com doencas faltam menos?
 #Qual eh o dia da semana que as pessoas mais faltam?
-#O horario esta relacionado com as faltam
-#Mulheres ou homens faltam memnos
+#O horario esta relacionado com as faltam?
+#Mulheres ou homens faltam mais?
+#Estudante tende a faltar mais?
+#Sms_Reminder ajuda a faltar menos?
 #-------------
-#Cluster
-#Previsao de vai faltar
-df = pd.read_csv('~/Documents/No-show-Issue-Comma-300k.csv').head(50000)
+df = pd.read_csv('~/Documents/No-show-Issue-Comma-300k.csv').head(100)
 
 def select_columns(df, name_columns):
     select_columns = df[name_columns].copy
@@ -88,9 +88,31 @@ def make_total_diseases(df):
 
 df['total_diseases'] = make_total_diseases(df.iloc[:, 6:11])
 
+
+
+#print df.head(100).tail(10)
+
+
+def extrai_horas_dia_mes_ano(df):
+    df['Hour'] = 0
+    df['Day'] = 0
+    df['Month'] = 0
+    df['Year'] = 0
+    cont = 0
+    for i in df['AppointmentRegistration']:
+        df.loc[cont, 'Year'] = int(i[0:4])
+        df.loc[cont, 'Month'] = int(i[5:7])
+        df.loc[cont, 'Day'] = int(i[8:10])
+        df.loc[cont, 'Hour'] = int(i[11:13])
+        cont = cont + 1
+    return df
+    
+df = extrai_horas_dia_mes_ano(df)
+
 sequence = ['Age',
  'Age_range',
  'Gender',
+ 'Hour', 'Day', 'Month', 'Year',
  'AppointmentRegistration',
  'ApointmentData',
  'DayOfTheWeek',
@@ -106,10 +128,26 @@ sequence = ['Age',
  'AwaitingTime',
  'Status',]
 df = df.reindex(columns=sequence)
+#print df.head()
+
+
+#Preferencia de horas das consultas
+def como_as_idades_marcam(df):
+    g = sns.lmplot(data = df, x="Hour", y="Age", hue="Age_range", truncate=True, size=5)
+    
+    # Use more informative axis labels than are provided by default
+    g.set_axis_labels("Hora", "Age")
+
+def horario_mais_concorrido(df):
+    sns.jointplot(data = df, x = 'Hour', y = 'Hour', kind="hex", color="#4CB391")
+#horario_mais_concorrido(df)
+
+
+
+
 
 #Respondendo --------> Pessoas mais velhas faltam mais?
 
-'''
 faixa_idade = [0]*12
 for i in df.Age:
     faixa_idade[int(i/10)] = faixa_idade[int(i/10)] + 1
@@ -179,7 +217,13 @@ plt.figure(3)
 plt.bar(range(1,8), percent_semana, 0.5, color="blue")
 plt.xlabel('dia_da_semana', fontsize=18)
 plt.ylabel('% de Faltas', fontsize=16)
-'''
+
+ 
+from sklearn.cluster import KMeans
+kmeans = KMeans()
+colunas = name_columns = ['Age', 'Gender', 'DayOfTheWeek', 'Diabetes', 'Alcoolism', 'HiperTension', 'Handcap', 'Smokes', 'Scholarship']
+kmeans = KMeans(n_clusters=3).fit(df[colunas])
+
 
 #Naive_Bayes
 from sklearn.naive_bayes import GaussianNB
